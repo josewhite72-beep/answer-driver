@@ -1,7 +1,7 @@
 /* Answer-driver · PanaMentorLabs
    Service Worker network-first: siempre intenta la red (para recibir
    actualizaciones de Vercel) y si no hay conexión usa la copia en caché. */
-var CACHE = 'answer-driver-v4';
+var CACHE = 'answer-driver-v5';
 var CORE = [
   './',
   './index.html',
