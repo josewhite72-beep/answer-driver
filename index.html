@@ -47,6 +47,13 @@ button{font-family:inherit;cursor:pointer;border:0}
 .chip .e{font-size:26px}
 .chip.sel{border-color:var(--sun);background:#353d78}
 .chip:active{transform:scale(.96)}
+.chip.wide{grid-column:1/-1;flex-direction:row;justify-content:flex-start;text-align:left;gap:12px;padding:10px 14px}
+.chip.wide .e{font-size:30px}
+.chip.wide small{display:block;font-size:12px;font-weight:700;color:#aab0e0;letter-spacing:.03em}
+.chip.wide span.t{display:block;line-height:1.2}
+.chip .n{margin-left:auto;font-size:12px;color:#aab0e0;font-weight:700}
+.seg.grades{flex-wrap:wrap}
+.seg.grades button{flex:1 0 auto;min-width:40px}
 .seg{display:flex;background:#2a3160;border-radius:14px;padding:4px;gap:4px}
 .seg button{flex:1;background:transparent;color:#c9cdf0;padding:10px 4px;border-radius:10px;font-weight:800;font-size:14px}
 .seg button.sel{background:var(--sun);color:var(--ink)}
@@ -131,17 +138,29 @@ textarea{width:100%;min-height:190px;border-radius:12px;border:2px solid #d9d2bb
       <div><b id="hStreak">0</b><small>Mejor racha</small></div>
     </div>
 
-    <div class="label">1 · Tema</div>
+    <div class="label">1 · Grado</div>
+    <div class="seg grades" id="gradeSeg">
+      <button data-v="free">🎨 Libre</button>
+      <button data-v="K">K</button>
+      <button data-v="1">1.º</button>
+      <button data-v="2">2.º</button>
+      <button data-v="3">3.º</button>
+      <button data-v="4">4.º</button>
+      <button data-v="5">5.º</button>
+      <button data-v="6">6.º</button>
+    </div>
+
+    <div class="label" id="topicLabel">2 · Tema</div>
     <div class="topics" id="topics"></div>
 
-    <div class="label">2 · Velocidad</div>
+    <div class="label">3 · Velocidad</div>
     <div class="seg" id="diffSeg">
       <button data-v="easy">🐢 Lento</button>
       <button data-v="normal">🚗 Normal</button>
       <button data-v="hard">🏎️ Rápido</button>
     </div>
 
-    <div class="label">3 · Modo</div>
+    <div class="label">4 · Modo</div>
     <div class="seg" id="modeSeg">
       <button data-v="classic">❤️ Clásico</button>
       <button data-v="practice">📘 Práctica</button>
@@ -225,7 +244,7 @@ textarea{width:100%;min-height:190px;border-radius:12px;border:2px solid #d9d2bb
     <p class="small">Una pregunta por línea, separada con <code>|</code>:<br>
       <code>pregunta | correcta | incorrecta | incorrecta</code><br>
       Si solo pones <code>pregunta | correcta</code>, las incorrectas se toman de las otras respuestas (mínimo 3 líneas).
-      Puedes empezar la pregunta con un emoji. También acepta JSON <code>[{"q","a","w":[..]}]</code>.</p>
+      Puedes empezar la pregunta con un emoji. También acepta JSON <code>[{"q","a","w":[..]}]</code> o el formato de Lesson Feud <code>[{"prompt","answer","options"}]</code>.</p>
     <textarea id="tArea" spellcheck="false" placeholder="🐶 What animal is it? | dog | cat | cow
 What is 3 + 2? | five | four | six
 How are you? | I'm fine, thank you. | I'm ten. | Goodbye!"></textarea>
@@ -235,6 +254,7 @@ How are you? | I'm fine, thank you. | I'm ten. | Goodbye!"></textarea>
   </div>
 </div>
 
+<script src="data/trimestre3.js"></script>
 <script>
 (function(){
 'use strict';
@@ -376,6 +396,15 @@ var BANK = {
   ]}
 };
 
+/* ---------- Banco curricular (data/trimestre3.js) ---------- */
+var CURR = window.AD_CURRICULUM || [];
+var GRADE_NAME = {K:'Kinder','1':'1.er grado','2':'2.º grado','3':'3.er grado','4':'4.º grado','5':'5.º grado','6':'6.º grado'};
+CURR.forEach(function(t){
+  BANK[t.id] = {name:t.title, icon:t.icon||'📘', es:'', items:t.items, curr:true,
+                grade:t.grade, scenario:t.scenario, theme:t.theme};
+});
+function gradeThemes(g){ return CURR.filter(function(t){ return t.grade===g; }).map(function(t){ return t.id; }); }
+
 /* =========================================================
    2. ESTADO Y CONFIGURACIÓN
    ========================================================= */
@@ -394,10 +423,16 @@ var cfg = {
   mode:  LS.get('mode','classic'),
   voice: LS.get('voice',true),
   sfx:   LS.get('sfx',true),
-  es:    LS.get('es',false)
+  es:    LS.get('es',false),
+  grade: LS.get('grade','free')
 };
 loadCustom();
-if(!BANK[cfg.topic] && cfg.topic!=='mix') cfg.topic='animals';
+if(cfg.grade!=='free' && !gradeThemes(cfg.grade).length) cfg.grade='free';
+if(!validTopic(cfg.topic)) cfg.topic = cfg.grade==='free' ? 'animals' : gradeThemes(cfg.grade)[0];
+function validTopic(k){
+  if(cfg.grade==='free') return k==='mix' || (BANK[k] && !BANK[k].curr);
+  return k==='rep_'+cfg.grade || gradeThemes(cfg.grade).indexOf(k)>=0;
+}
 
 var G = null; // estado de partida
 
@@ -464,7 +499,11 @@ function say(text,rate){
    5. MENÚ
    ========================================================= */
 function topicList(){
-  var keys=Object.keys(BANK).filter(function(k){return k!=='custom';});
+  if(cfg.grade!=='free'){
+    var th=gradeThemes(cfg.grade);
+    return th.length>1 ? th.concat(['rep_'+cfg.grade]) : th;
+  }
+  var keys=Object.keys(BANK).filter(function(k){return k!=='custom' && !BANK[k].curr;});
   var out=[];
   if(BANK.custom) out.push('custom');
   out=out.concat(keys); out.push('mix');
@@ -472,13 +511,41 @@ function topicList(){
 }
 function renderTopics(){
   var box=$('topics'); box.innerHTML='';
+  $('topicLabel').textContent = cfg.grade==='free' ? '2 · Tema' : '2 · Theme · '+GRADE_NAME[cfg.grade]+' · III Trimestre';
   topicList().forEach(function(k){
     var b=document.createElement('button'); b.className='chip'+(cfg.topic===k?' sel':'');
-    var t = k==='mix' ? {icon:'🎲',name:'Mix'} : BANK[k];
-    b.innerHTML='<span class="e">'+t.icon+'</span>'+esc(t.name);
+    if(cfg.grade!=='free'){
+      b.className+=' wide';
+      var t, sub, n;
+      if(k.indexOf('rep_')===0){
+        var ids=gradeThemes(cfg.grade);
+        t={icon:'🔁',name:'Repaso: todos los Themes'};
+        sub='Scenario '+BANK[ids[0]].scenario+' · Themes '+ids.map(function(i){return BANK[i].theme;}).join(' y ');
+        n=ids.reduce(function(s,i){return s+BANK[i].items.length;},0);
+      }else{
+        t=BANK[k]; sub='Scenario '+t.scenario+' · Theme '+t.theme; n=t.items.length;
+      }
+      b.innerHTML='<span class="e">'+t.icon+'</span><span><small>'+esc(sub)+'</small><span class="t">'+esc(t.name)+'</span></span><span class="n">'+n+' preg.</span>';
+    }else{
+      var t2 = k==='mix' ? {icon:'🎲',name:'Mix'} : BANK[k];
+      b.innerHTML='<span class="e">'+t2.icon+'</span>'+esc(t2.name);
+    }
     b.onclick=function(){ cfg.topic=k; LS.set('topic',k); renderTopics(); renderBest(); SFX.move(); };
     box.appendChild(b);
   });
+}
+function bindGrades(){
+  var seg=$('gradeSeg');
+  function paint(){ [].forEach.call(seg.children,function(b){ b.classList.toggle('sel', b.dataset.v===cfg.grade); }); }
+  [].forEach.call(seg.children,function(b){
+    if(b.dataset.v!=='free' && !gradeThemes(b.dataset.v).length) b.style.display='none';
+    b.onclick=function(){
+      cfg.grade=b.dataset.v; LS.set('grade',cfg.grade);
+      if(!validTopic(cfg.topic)){ cfg.topic = cfg.grade==='free' ? 'animals' : gradeThemes(cfg.grade)[0]; LS.set('topic',cfg.topic); }
+      paint(); renderTopics(); renderBest(); SFX.move();
+    };
+  });
+  paint();
 }
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function bindSeg(id,key){
@@ -508,8 +575,16 @@ function parseCustom(txt){
   var items=[];
   if(txt.charAt(0)==='['){
     try{
+      // acepta {q,a,w} (Answer-driver) y {prompt,answer,options} (Lesson Feud)
+      var seen={};
       JSON.parse(txt).forEach(function(o){
-        if(o && o.q && o.a) items.push({q:String(o.q),a:String(o.a),w:(o.w||[]).map(String).filter(Boolean).slice(0,2),es:o.es?String(o.es):undefined});
+        if(!o) return;
+        var q=o.q||o.prompt, a=o.a||o.answer;
+        if(!q||!a) return;
+        q=String(q).trim(); a=String(a).trim();
+        if(seen[q+'|'+a]) return; seen[q+'|'+a]=1;
+        var w=(o.w||o.options||[]).map(String).filter(function(x){return x && x.trim()!==a;}).slice(0,2);
+        items.push({q:q,a:a,w:w,es:o.es?String(o.es):undefined});
       });
       return items;
     }catch(e){ return null; }
@@ -531,11 +606,14 @@ function loadCustom(){
    7. ARMADO DE LA PARTIDA
    ========================================================= */
 function buildDeck(){
-  var keys = cfg.topic==='mix' ? Object.keys(BANK).filter(function(k){return k!=='custom';}) : [cfg.topic];
+  var keys;
+  if(cfg.topic==='mix') keys=Object.keys(BANK).filter(function(k){return k!=='custom' && !BANK[k].curr;});
+  else if(cfg.topic.indexOf('rep_')===0) keys=gradeThemes(cfg.topic.slice(4));
+  else keys=[cfg.topic];
   var deck=[];
   keys.forEach(function(k){
     var T=BANK[k];
-    T.items.forEach(function(it){ deck.push({q:it.q,a:it.a,w:it.w,es:it.es||T.es,topic:k}); });
+    T.items.forEach(function(it){ deck.push({q:it.q,a:it.a,w:it.w,k:it.k,es:it.es||T.es,topic:k}); });
   });
   deck=shuffle(deck);
   if(cfg.topic==='mix') deck=deck.slice(0,30);
@@ -544,9 +622,15 @@ function buildDeck(){
 function makeOptions(item){
   var wrong=(item.w||[]).filter(function(x){return x && x!==item.a;});
   if(wrong.length<2){
-    var pool=BANK[item.topic].items.map(function(i){return i.a;})
-      .filter(function(a){return a!==item.a && wrong.indexOf(a)<0;});
-    pool=shuffle(pool);
+    var src=BANK[item.topic].items;
+    function poolOf(list){
+      var seen={}; return shuffle(list.map(function(i){return i.a;}).filter(function(a){
+        if(a===item.a || wrong.indexOf(a)>=0 || seen[a]) return false; seen[a]=1; return true; }));
+    }
+    // primero respuestas del mismo tipo (k), luego del tema completo
+    var pool=poolOf(src.filter(function(i){ return (i.k||'')===(item.k||''); }));
+    while(wrong.length<2 && pool.length) wrong.push(pool.pop());
+    pool=poolOf(src);
     while(wrong.length<2 && pool.length) wrong.push(pool.pop());
     var fallback=['yes','no','maybe','red','dog','ten'];
     while(wrong.length<2){ var f=fallback.shift(); if(f!==item.a && wrong.indexOf(f)<0) wrong.push(f); }
@@ -608,7 +692,10 @@ function nextQuestion(){
   G.phase='drive';
   var sp=splitEmoji(item.q);
   setBanner(sp.e, sp.t, item.es||'', '');
-  say(item.q);
+  // en preguntas de traducción solo se lee la palabra en inglés
+  var m = item.k==='es' && item.q.match(/“([^”]+)”/);
+  G.gate.say = m ? m[1] : item.q;
+  say(G.gate.say);
   var p = cfg.mode==='practice' ? (G.idx-1)/G.deck.length*100 : 0;
   $('progBar').style.width = cfg.mode==='practice' ? p+'%' : '0%';
 }
@@ -886,7 +973,7 @@ document.addEventListener('keydown',function(e){
   else if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') moveTo(G.lane+1);
   else if(e.key==='1'||e.key==='2'||e.key==='3') moveTo(+e.key-1);
   else if(e.key==='Escape'||e.key==='p'||e.key==='P') togglePause();
-  else if(e.key===' '){ if(G&&G.gate) say(G.gate.item.q); }
+  else if(e.key===' '){ if(G&&G.gate) say(G.gate.say||G.gate.item.q); }
 });
 
 /* ---------- Flujo de pantallas ---------- */
@@ -947,7 +1034,7 @@ $('resumeBtn').onclick=function(){ togglePause(false); };
 $('quitBtn').onclick=toMenu;
 $('againBtn').onclick=function(){ $('overM').classList.remove('on'); startGame(); };
 $('menuBtn').onclick=toMenu;
-$('speakBtn').onclick=function(){ if(G&&G.gate){ var v=cfg.voice; cfg.voice=true; say(G.gate.item.q,0.8); cfg.voice=v; } };
+$('speakBtn').onclick=function(){ if(G&&G.gate){ var v=cfg.voice; cfg.voice=true; say(G.gate.say||G.gate.item.q,0.8); cfg.voice=v; } };
 
 document.addEventListener('visibilitychange',function(){ if(document.hidden && G && !G.over && !G.paused) togglePause(true); });
 window.addEventListener('resize',function(){ if(G) layout(); });
@@ -959,12 +1046,13 @@ $('tSave').onclick=function(){
   var txt=$('tArea').value, items=parseCustom(txt), m=$('tMsg');
   if(items===null){ m.style.color='#c42f2f'; m.textContent='⚠️ El JSON no es válido.'; return; }
   if(!txt.trim()){ LS.set('custom',''); loadCustom(); if(cfg.topic==='custom'){cfg.topic='animals';LS.set('topic','animals');}
-    renderTopics(); m.style.color='#178a47'; m.textContent='Se borraron tus preguntas.'; return; }
+    bindGrades(); renderTopics(); m.style.color='#178a47'; m.textContent='Se borraron tus preguntas.'; return; }
   var needAuto=items.filter(function(i){return (i.w||[]).length<2;}).length;
   if(!items.length || (needAuto && items.length<3)){ m.style.color='#c42f2f';
     m.textContent='⚠️ Necesitas al menos 3 líneas, o poner 2 incorrectas en cada una.'; return; }
   LS.set('custom',txt); loadCustom(); cfg.topic='custom'; LS.set('topic','custom');
-  renderTopics(); renderBest();
+  cfg.grade='free'; LS.set('grade','free');
+  bindGrades(); renderTopics(); renderBest();
   m.style.color='#178a47'; m.textContent='✅ '+items.length+' preguntas guardadas. Tema "Mis preguntas" seleccionado.';
   setTimeout(function(){ $('teachM').classList.remove('on'); },1100);
 };
@@ -980,7 +1068,7 @@ $('cacheBtn').onclick=function(){
 
 /* ---------- Inicio ---------- */
 FONT=getComputedStyle(document.body).fontFamily;
-renderTopics(); bindSeg('diffSeg','diff'); bindSeg('modeSeg','mode');
+bindGrades(); renderTopics(); bindSeg('diffSeg','diff'); bindSeg('modeSeg','mode');
 bindTog('tVoice','voice'); bindTog('tSfx','sfx'); bindTog('tEs','es');
 renderBest();
 
