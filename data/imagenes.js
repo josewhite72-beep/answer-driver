@@ -36,6 +36,11 @@ window.AD_IMAGES = {
   '🌳':'img/places/park.png',
   '🏠':'img/places/home.png',
   '🏋':'img/places/gym.png',
+  '🏢':'img/places/office.png',
+  '🏪':'img/places/store.png',
+  '👕':'img/places/shirt.png',
+  '👟':'img/places/shoes.png',
+  '🥕':'img/places/carrot.png',
 
   /* ---- Frutas y mercado (3.er grado) ---- */
   '🍌':'img/fruits/banana.png',
@@ -46,13 +51,22 @@ window.AD_IMAGES = {
   '🧺':'img/fruits/basket.png',
   '🛒':'img/fruits/cart.png',
   '💵':'img/fruits/money.png',
+  '🏷':'img/fruits/pricetag.png',
 
   /* ---- Almuerzo (4.º grado) ---- */
   '🥪':'img/lunch/sandwich.png',
   '🍚':'img/lunch/rice.png',
   '🍗':'img/lunch/chicken.png',
   '🧃':'img/lunch/juice.png',
-  '💧':'img/lunch/water.png'
+  '💧':'img/lunch/water.png',
+
+  /* ---- Playa (4.º) y deportes / animales (5.º) ---- */
+  '🏖':'img/places/beach.png',
+  '⚽':'img/sports/ball.png',
+  '🐟':'img/sports/fish.png',
+  '🐒':'img/sports/monkey.png',
+  '🐢':'img/sports/turtle.png',
+  '🌊':'img/sports/waves.png'
 };
 
 /* =========================================================

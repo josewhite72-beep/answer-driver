@@ -82,6 +82,23 @@ Cambia solo **[SUJETO]**. Si sale con fondo, pide: *"same image with transparent
 | juice.png | a juice box with a straw |
 | water.png | a bottle of water |
 
+### Hoja 2 (2.º a 5.º)
+
+| Archivo | Sujeto |
+|---|---|
+| places/office.png | an office building |
+| places/store.png | a small store with an awning |
+| places/shirt.png | a t-shirt |
+| places/shoes.png | a pair of sneakers |
+| places/carrot.png | a carrot |
+| fruits/pricetag.png | a price tag |
+| places/beach.png | a beach with sand and an umbrella |
+| sports/ball.png | a soccer ball |
+| sports/fish.png | a fish |
+| sports/monkey.png | a monkey |
+| sports/turtle.png | a turtle |
+| sports/waves.png | ocean waves |
+
 ## Recomendaciones
 
 - Que cada imagen pese menos de 100 KB. Si pesa más, pásala por un compresor (por ejemplo squoosh.app) antes de subirla.
