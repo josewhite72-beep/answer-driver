@@ -54,3 +54,24 @@ window.AD_IMAGES = {
   '🧃':'img/lunch/juice.png',
   '💧':'img/lunch/water.png'
 };
+
+/* =========================================================
+   Teñido de vehículos para las preguntas de color (1.er grado).
+   Si en la pregunta aparece un círculo de color (🔵🔴🟡🟢🟣🟠),
+   el vehículo se pinta de ese color.
+   Cada regla dice qué partes de la ilustración se pintan:
+     h       = rangos de tono [desde°, hasta°, saturación mínima]
+     neutral = [brillo mín, brillo máx] para cuerpos blancos/grises
+   ========================================================= */
+window.AD_TINT = {
+  '🚗':{h:[[330,25,.35]]},
+  '🚕':{h:[[35,60,.35]]},
+  '🚚':{h:[[10,40,.35]], neutral:[.55,.97]},
+  '🚌':{h:[[340,20,.3]], neutral:[.6,.98]},
+  '🚲':{h:[[180,230,.15]]},
+  '🚆':{h:[[340,20,.35],[35,60,.35]]}
+};
+window.AD_TINT_COLORS = {          // tono°, saturación
+  '🔵':[215,.75], '🔴':[2,.8],  '🟡':[48,.85],
+  '🟢':[125,.7],  '🟣':[275,.6], '🟠':[26,.85]
+};

@@ -955,10 +955,50 @@ function setBanner(e,t,es,fb){
   $('qFb').style.display='none';
 }
 // texto con emojis → cada emoji con ilustración disponible se muestra como imagen
+// (si hay un círculo de color, los vehículos se tiñen de ese color)
 function richText(s){
-  return Array.from(s||'').filter(function(c){return c!=='️';}).map(function(c){
-    var im=imgFor(c); return im ? '<img class="qimg" alt="" src="'+esc(im.src)+'">' : esc(c);
+  var chars=Array.from(s||'').filter(function(c){return c!=='️';});
+  var tc=window.AD_TINT_COLORS||{}, target=null;
+  chars.forEach(function(c){ if(tc[c]) target=tc[c]; });
+  return chars.map(function(c){
+    var im=imgFor(c); if(!im) return esc(c);
+    var src = target ? tinted(c,im,target) : null;
+    return '<img class="qimg" alt="" src="'+esc(src||im.src)+'">';
   }).join('');
+}
+var TINTED={};
+function tinted(emoji,im,target){
+  var rule=(window.AD_TINT||{})[emoji]; if(!rule) return null;
+  var key=emoji+'|'+target.join(',');
+  if(key in TINTED) return TINTED[key];
+  var src=null;
+  try{
+    var w=im.naturalWidth, h=im.naturalHeight, c=document.createElement('canvas');
+    c.width=w; c.height=h; var x=c.getContext('2d'); x.drawImage(im,0,0);
+    var d=x.getImageData(0,0,w,h), p=d.data, th=target[0], ts=target[1];
+    for(var i=0;i<p.length;i+=4){
+      if(p[i+3]<77) continue;
+      var r=p[i]/255,g=p[i+1]/255,b=p[i+2]/255, mx=Math.max(r,g,b), mn=Math.min(r,g,b), df=mx-mn;
+      var hh=0, ss=mx?df/mx:0, vv=mx;
+      if(df){ hh = mx===r ? ((g-b)/df)%6 : mx===g ? (b-r)/df+2 : (r-g)/df+4; hh=(hh*60+360)%360; }
+      var ok=false;
+      (rule.h||[]).forEach(function(R){
+        var inr = R[0]>R[1] ? (hh>=R[0]||hh<=R[1]) : (hh>=R[0]&&hh<=R[1]);
+        if(inr && ss>=R[2] && vv>.3) ok=true;
+      });
+      var neutral=false;
+      if(!ok && rule.neutral && ss<.14 && vv>=rule.neutral[0] && vv<=rule.neutral[1]){ ok=true; neutral=true; }
+      if(!ok) continue;
+      var S = neutral ? ts : Math.max(ts,ss), V = neutral && th!==48 ? vv*.92 : vv;
+      // hsv → rgb
+      var C=V*S, X=C*(1-Math.abs((th/60)%2-1)), m=V-C, rr,gg,bb, k=Math.floor(th/60)%6;
+      if(k===0){rr=C;gg=X;bb=0;} else if(k===1){rr=X;gg=C;bb=0;} else if(k===2){rr=0;gg=C;bb=X;}
+      else if(k===3){rr=0;gg=X;bb=C;} else if(k===4){rr=X;gg=0;bb=C;} else {rr=C;gg=0;bb=X;}
+      p[i]=(rr+m)*255; p[i+1]=(gg+m)*255; p[i+2]=(bb+m)*255;
+    }
+    x.putImageData(d,0,0); src=c.toDataURL('image/png');
+  }catch(e){ src=null; } // p. ej. abierto como file:// (imagen "tainted")
+  TINTED[key]=src; return src;
 }
 function setFeedback(kind,txt){
   $('banner').className=kind;
